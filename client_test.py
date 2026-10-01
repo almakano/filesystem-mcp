@@ -51,6 +51,14 @@ async def main():
         r = await c.call_tool("execute_command", {"command": "echo executed && pwd", "shell": True})
         print("EXEC:", json.loads(r.content[0].text)["stdout"].strip())
 
+        r = await c.call_tool("test_in_browser", {
+            "script": "await page.setContent('<h1 id=t>hi mcp</h1>'); "
+                      "const t = await page.$eval('#t', e => e.textContent); "
+                      "return {text: t, upper: t.toUpperCase()};",
+            "timeout": 30,
+        })
+        print("BROWSER:", json.loads(r.content[0].text)["result"])
+
         r = await c.call_tool("delete_path", {"path": RENAMED})
         print("DELETE file:", json.loads(r.content[0].text)["deleted"])
 
