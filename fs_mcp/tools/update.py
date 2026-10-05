@@ -15,6 +15,7 @@ def update_file(
     occurrence: int | None = None,
     regex: bool = False,
     check_syntax: bool = True,
+    cwd: str = ".",
 ) -> dict:
     """Виконує цільову заміну (find-and-replace) всередині наявного файлу.
 
@@ -29,8 +30,10 @@ def update_file(
         occurrence: Індекс (відлік з 1), котрий збіг замінити; None замінює всі.
         regex: Вважати `find` регулярним виразом, коли True.
         check_syntax: Валідувати синтаксис для .py/.js/.php перед збереженням (типово True).
+        cwd: Робочий каталог; відносні шляхи розв'язуються від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    target = resolve_path(path, access="write")
+    target = resolve_path(path, access="write", cwd=cwd)
     if not target.is_file():
         raise FileNotFoundError(f"not a file: {target}")
 

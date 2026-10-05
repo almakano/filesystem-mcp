@@ -61,6 +61,7 @@ def write_file(
     append: bool = False,
     create_dirs: bool = True,
     check_syntax: bool = True,
+    cwd: str = ".",
 ) -> dict:
     """Створює або перезаписує (або дозаписує) текстовий файл.
 
@@ -77,8 +78,10 @@ def write_file(
         append: Дозаписувати замість обрізання, коли True.
         create_dirs: Створювати батьківські каталоги, якщо вони відсутні.
         check_syntax: Валідувати синтаксис для .py/.js/.php перед записом (типово True).
+        cwd: Робочий каталог; відносні шляхи розв'язуються від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    target = resolve_path(path, access="write")
+    target = resolve_path(path, access="write", cwd=cwd)
 
     # Формуємо підсумковий вміст (з урахуванням дозапису) і перевіряємо синтаксис.
     resulting = content

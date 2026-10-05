@@ -62,28 +62,55 @@ def configure(
         EXEC_TIMEOUT_MAX = exec_timeout_max
 
 
-def resolve_path(path: str, *, access: str = "read") -> Path:
-    """Розв'язує шлях і перевіряє sandbox та права вибраного MCP-користувача."""
+def _expand(text: str, base: Path, home: Path) -> Path:
+    """Розгортає ``~``/``~/`` від home та відносні шляхи від ``base`` (без resolve)."""
+    t = str(text)
+    # ~ та ~/ завжди розгортаємо від домашнього каталогу MCP-користувача,
+    # а не від HOME процесу сервера.
+    if t == "~":
+        return home
+    if t.startswith("~/"):
+        return home / t[2:]
+    candidate = Path(t)
+    if not candidate.is_absolute():
+        candidate = base / candidate
+    return candidate
+
+
+def resolve_path(path: str, *, access: str = "read", cwd: str | None = None) -> Path:
+    """Розв'язує шлях і перевіряє sandbox та права вибраного MCP-користувача.
+
+    Відносні шляхи та префікс ``~``/``~/`` рахуються від домашнього («робочого»)
+    каталогу авторизованого MCP-користувача; якщо налаштовано пісочницю, базою
+    для відносних шляхів слугує вона.
+
+    Якщо передано ``cwd``, він стає базою для відносних шляхів замість домашнього
+    каталогу/пісочниці; сам ``cwd`` резв'язується так само (відносний ``cwd`` — від
+    домашнього каталогу/пісочниці, ``~`` — від домашнього каталогу). Абсолютний
+    ``path`` та префікс ``~`` у ``path`` ігнорують ``cwd``.
+    """
     if not path:
         raise ValueError("path must not be empty")
-    candidate = Path(path).expanduser()
-    if not candidate.is_absolute():
-        base = SANDBOX or Path.cwd()
-        candidate = base / candidate
-    resolved = candidate.resolve()
+    from .auth import require_access, user_home
+
+    home = user_home()
+    default_base = SANDBOX or home
+    # База для відносних шляхів: налаштований cwd (резолвимо його від домашнього
+    # каталогу/пісочниці) або, як раніше, SANDBOX/home.
+    base = default_base if not cwd else _expand(cwd, default_base, home).resolve()
+    candidate = _expand(path, base, home).resolve()
     if SANDBOX is not None:
         try:
-            resolved.relative_to(SANDBOX)
+            candidate.relative_to(SANDBOX)
         except ValueError:
             raise PermissionError(f"path escapes sandbox root {SANDBOX}: {path}")
-    from .auth import require_access
 
     if access == "read":
-        require_access(resolved, read=True)
+        require_access(candidate, read=True)
     elif access == "write":
-        require_access(resolved, write=True)
+        require_access(candidate, write=True)
     elif access == "traverse":
-        require_access(resolved, execute=True)
+        require_access(candidate, execute=True)
     elif access != "none":
         raise ValueError(f"unknown access mode: {access}")
-    return resolved
+    return candidate

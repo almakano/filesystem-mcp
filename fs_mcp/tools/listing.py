@@ -5,15 +5,17 @@ from ..config import MAX_SEARCH_RESULTS, resolve_path
 
 
 @server.tool()
-def list_directory(path: str = ".", recursive: bool = False, include_hidden: bool = False) -> dict:
+def list_directory(path: str = ".", recursive: bool = False, include_hidden: bool = False, cwd: str = ".") -> dict:
     """Перелічує записи каталогу.
 
     Args:
         path: Каталог для перегляду.
         recursive: Обходити все дерево, якщо True.
         include_hidden: Включати приховані файли (з крапкою), якщо True.
+        cwd: Робочий каталог; відносні шляхи розв'язуються від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    target = resolve_path(path)
+    target = resolve_path(path, cwd=cwd)
     if not target.is_dir():
         raise NotADirectoryError(f"not a directory: {target}")
 

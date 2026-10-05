@@ -8,7 +8,7 @@ from ..config import resolve_path
 
 
 @server.tool()
-def rename_path(src: str, dst: str, overwrite: bool = False, create_dirs: bool = True) -> dict:
+def rename_path(src: str, dst: str, overwrite: bool = False, create_dirs: bool = True, cwd: str = ".") -> dict:
     """Перейменовує або переміщує файл чи каталог.
 
     Працює і для файлів, і для каталогів. Обидва шляхи `src` і `dst` розв'язуються
@@ -20,9 +20,11 @@ def rename_path(src: str, dst: str, overwrite: bool = False, create_dirs: bool =
         overwrite: Замінити `dst`, якщо він уже існує, коли True; інакше операцію
             відмовлено, щоб не перезаписати дані.
         create_dirs: Створити батьківський каталог `dst`, якщо він відсутній.
+        cwd: Робочий каталог; відносні шляхи `src`/`dst` розв'язуються від нього
+            (типово — домашній каталог MCP-користувача).
     """
-    source = resolve_path(src, access="none")
-    dest = resolve_path(dst, access="none")
+    source = resolve_path(src, access="none", cwd=cwd)
+    dest = resolve_path(dst, access="none", cwd=cwd)
     require_access(source.parent, write=True)
     require_access(dest.parent, write=True)
 

@@ -5,15 +5,17 @@ from ..config import MAX_READ_BYTES, resolve_path
 
 
 @server.tool()
-def read_file(path: str, start_line: int = 1, end_line: int | None = None) -> dict:
+def read_file(path: str, start_line: int = 1, end_line: int | None = None, cwd: str = ".") -> dict:
     """Читає текстовий файл, за бажанням — конкретний діапазон рядків (відлік з 1).
 
     Args:
         path: Файл для читання.
         start_line: Перший рядок для повернення (відлік з 1, включно).
         end_line: Останній рядок для повернення (відлік з 1, включно); None означає до кінця файлу.
+        cwd: Робочий каталог; відносні шляхи розв'язуються від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    target = resolve_path(path)
+    target = resolve_path(path, cwd=cwd)
     if not target.is_file():
         raise FileNotFoundError(f"not a file: {target}")
 

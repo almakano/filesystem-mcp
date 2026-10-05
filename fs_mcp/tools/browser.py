@@ -10,7 +10,7 @@ from pathlib import Path
 
 from ..app import server
 from ..auth import preexec_as_user
-from ..config import EXEC_TIMEOUT_MAX, MAX_READ_BYTES
+from ..config import EXEC_TIMEOUT_MAX, MAX_READ_BYTES, resolve_path
 
 # Типовий реальний ліміт усього запуску браузера (сек).
 DEFAULT_BROWSER_TIMEOUT = 60.0
@@ -120,7 +120,7 @@ def _split_result(stdout: str) -> tuple[dict | None, str]:
 
 
 @server.tool()
-def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER_TIMEOUT) -> dict:
+def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER_TIMEOUT, cwd: str = ".") -> dict:
     """Виконує Puppeteer-сценарій у headless Chrome (через Node.js) і повертає результат.
 
     `script` — тіло асинхронної функції, якій доступні `page` (об'єкт Puppeteer
@@ -134,6 +134,9 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
         script: Тіло JS-сценарію з доступним `page`.
         url: Необов'язкова стартова адреса для `page.goto`.
         timeout: Загальний ліміт секунд на запуск; вкладається в межу exec-таймаута.
+        cwd: Робочий каталог процесу; відносні шляхи у сценарії (напр. для
+            скриншотів/файлів) розв'язуються від нього (типово — домашній каталог
+            MCP-користувача).
 
     Returns:
         dict з `ok` (bool); при успіху — `result` (повернуте сценарієм значення) і
@@ -142,6 +145,9 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
     """
     if not script or not script.strip():
         raise ValueError("script must not be empty")
+
+    # cwd ""/None → «.» → домашній каталог користувача (див. config.resolve_path).
+    workdir = resolve_path(cwd or ".", access="traverse")
 
     node = shutil.which("node")
     if node is None:
@@ -176,7 +182,7 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
 
         proc = subprocess.Popen(  # noqa: S603 - фіксований бінарник node + наш гарнес
             [node, str(harness_path)],
-            cwd=str(root),
+            cwd=str(workdir) if workdir else str(root),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

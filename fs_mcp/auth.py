@@ -4,6 +4,7 @@ import contextvars
 import os
 import pwd
 import re
+from pathlib import Path
 from typing import Any
 
 from mcp.server.lowlevel.server import ServerRequestContext
@@ -39,6 +40,28 @@ def set_user(name: str) -> contextvars.Token:
 
 def reset_user(token: contextvars.Token) -> None:
     _current_user.reset(token)
+
+
+def user_home() -> Path:
+    """Домашній («робочий») каталог авторизованого MCP-користувача."""
+    return Path(get_user().pw_dir)
+
+
+def user_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    """Окруження для запуску команд від імені авторизованого MCP-користувача.
+
+    Бере за основу поточне окруження процесу сервера й підміняє змінні, що мають
+    вказувати на цільового користувача, а не на сервер (зазвичай root). Викликається
+    у батьківському процесі до fork, тому get_user() тут доступний.
+    """
+    user = get_user()
+    env = dict(base if base is not None else os.environ)
+    env["HOME"] = user.pw_dir
+    env["USER"] = user.pw_name
+    env["LOGNAME"] = user.pw_name
+    env["SHELL"] = user.pw_shell or "/bin/sh"
+    env.setdefault("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+    return env
 
 
 def _header_user(ctx: ServerRequestContext[Any, Any]) -> str | None:
@@ -107,9 +130,9 @@ def require_access(path, *, read: bool = False, write: bool = False, execute: bo
         required = 0o5 if target.is_dir() else 0o4
         if not _has_mode(target, required, user):
             raise PermissionError(f"user {user.pw_name} cannot read {target}")
-    if write and not _has_mode(target, 0o222, user):
+    if write and not _has_mode(target, 0o2, user):
         raise PermissionError(f"user {user.pw_name} cannot write {target}")
-    if execute and not _has_mode(target, 0o111, user):
+    if execute and not _has_mode(target, 0o1, user):
         raise PermissionError(f"user {user.pw_name} cannot execute {target}")
 
 

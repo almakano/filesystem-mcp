@@ -14,6 +14,7 @@ def search_files(
     glob: str = "*",
     case_sensitive: bool = False,
     max_results: int = MAX_SEARCH_RESULTS,
+    cwd: str = ".",
 ) -> dict:
     """Шукає у файловій системі за іменем файлу, за бажанням — за вмістом.
 
@@ -24,8 +25,10 @@ def search_files(
         glob: Брати до уваги лише файли, чиє ім'я відповідає цьому glob (напр. "*.py").
         case_sensitive: Враховувати регістр, якщо True.
         max_results: Обмеження на кількість повернутих збігів.
+        cwd: Робочий каталог; відносний `root` розв'язується від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    base = resolve_path(root)
+    base = resolve_path(root, cwd=cwd)
     if not base.exists():
         raise FileNotFoundError(f"path does not exist: {base}")
 

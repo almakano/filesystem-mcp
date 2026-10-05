@@ -9,7 +9,7 @@ from ..config import resolve_path
 
 
 @server.tool()
-def delete_path(path: str, recursive: bool = False) -> dict:
+def delete_path(path: str, recursive: bool = False, cwd: str = ".") -> dict:
     """Видаляє файл, символічне посилання або каталог.
 
     Args:
@@ -17,8 +17,10 @@ def delete_path(path: str, recursive: bool = False) -> dict:
         recursive: Видаляти непорожнений каталог з деревом, якщо True. Каталог
             видаляється, лише якщо він порожній (або `recursive` True); це захищає
             від випадкової втрати даних.
+        cwd: Робочий каталог; відносні шляхи розв'язуються від нього (типово —
+            домашній каталог MCP-користувача).
     """
-    target = resolve_path(path, access="none")
+    target = resolve_path(path, access="none", cwd=cwd)
     require_access(target.parent, write=True)
     if not target.exists() and not target.is_symlink():
         raise FileNotFoundError(f"path does not exist: {target}")

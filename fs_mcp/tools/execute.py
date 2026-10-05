@@ -6,7 +6,7 @@ import signal
 import subprocess
 
 from ..app import server
-from ..auth import preexec_as_user
+from ..auth import preexec_as_user, user_env
 from ..config import (
     EXEC_TIMEOUT_DEFAULT,
     EXEC_TIMEOUT_MAX,
@@ -22,11 +22,13 @@ def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_
     Args:
         command: Командний рядок для запуску. Коли `shell` False — розбирається через
             shlex; коли True — передається системній оболонці.
-        cwd: Робочий каталог для процесу.
+        cwd: Робочий каталог для процесу. Відносні шляхи та пусте значення
+            (``""``/``None``) розв'язуються від домашнього каталогу MCP-користувача.
         timeout: Максимум секунд реального часу, після яких процес буде завершено примусово.
         shell: Виконати через /bin/sh -c (або cmd /c) замість exec-форми.
     """
-    workdir = resolve_path(cwd) if cwd else None
+    # cwd ""/None → «.» → домашній каталог користувача (див. config.resolve_path).
+    workdir = resolve_path(cwd or ".", access="traverse")
     timeout = min(max(0.1, timeout), EXEC_TIMEOUT_MAX)
 
     if shell:
@@ -38,6 +40,8 @@ def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_
 
     popen_kwargs: dict = dict(
         cwd=str(workdir) if workdir else None,
+        # HOME/USER/LOGNAME/SHELL мають вказувати на цільового користувача, а не на сервер.
+        env=user_env(),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
