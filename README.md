@@ -123,6 +123,7 @@ location ~ "^/llm/mcp/(?<mcp_user>[A-Za-z_][A-Za-z0-9_.-]{0,31})/?$" {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-MCP-User $mcp_user;
     proxy_set_header Connection "";
 
     # Streamable HTTP / SSE: без буферизації, довгі таймаути, без кешу/стиснення
@@ -131,8 +132,8 @@ location ~ "^/llm/mcp/(?<mcp_user>[A-Za-z_][A-Za-z0-9_.-]{0,31})/?$" {
     proxy_cache off;
     gzip off;
     chunked_transfer_encoding on;
-    proxy_read_timeout 3600s;
-    proxy_send_timeout 3600s;
+    proxy_read_timeout 7200s;
+    proxy_send_timeout 7200s;
 
     client_max_body_size 10m;
 }
