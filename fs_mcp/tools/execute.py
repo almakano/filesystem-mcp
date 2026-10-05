@@ -6,6 +6,7 @@ import signal
 import subprocess
 
 from ..app import server
+from ..auth import preexec_as_user
 from ..config import (
     EXEC_TIMEOUT_DEFAULT,
     EXEC_TIMEOUT_MAX,
@@ -45,6 +46,7 @@ def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_
         popen_kwargs["shell"] = True
     # Від'єднуємо у нову групу процесів, щоб примусово завершити все дерево за таймаутом.
     popen_kwargs["start_new_session"] = True
+    popen_kwargs["preexec_fn"] = preexec_as_user
 
     proc = subprocess.Popen(argv, **popen_kwargs)  # noqa: S603 - навмисний exec-інструмент
     try:

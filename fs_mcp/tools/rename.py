@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 
 from ..app import server
+from ..auth import require_access
 from ..config import resolve_path
 
 
@@ -20,8 +21,10 @@ def rename_path(src: str, dst: str, overwrite: bool = False, create_dirs: bool =
             відмовлено, щоб не перезаписати дані.
         create_dirs: Створити батьківський каталог `dst`, якщо він відсутній.
     """
-    source = resolve_path(src)
-    dest = resolve_path(dst)
+    source = resolve_path(src, access="none")
+    dest = resolve_path(dst, access="none")
+    require_access(source.parent, write=True)
+    require_access(dest.parent, write=True)
 
     if not source.exists() and not source.is_symlink():
         raise FileNotFoundError(f"source does not exist: {source}")

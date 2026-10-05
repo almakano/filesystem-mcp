@@ -7,9 +7,10 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from mcp.server.context import HandlerResult, ServerRequestContext
+from .auth import get_user
 
 _LOGGER_NAME = "fs_mcp.audit"
-_MAX_STR = 120  # поріг скорочення довгих рядкових аргументів (content тощо)
+_MAX_STR = 1024  # поріг скорочення довгих рядкових аргументів (content тощо)
 
 
 def get_audit_logger() -> logging.Logger:
@@ -24,6 +25,14 @@ def get_audit_logger() -> logging.Logger:
         logger.setLevel(logging.INFO)
         logger.propagate = False
     return logger
+
+
+def _user_name() -> str:
+    """Ім'я поточного MCP-користувача для журналу; '?' якщо контекст не встановлено."""
+    try:
+        return get_user().pw_name
+    except Exception:  # noqa: BLE001 — логування не має ламати обробку запиту
+        return "?"
 
 
 def _compact(value: Any) -> Any:
@@ -84,26 +93,28 @@ def make_tool_audit_middleware(logger: logging.Logger) -> Callable[..., Awaitabl
         params = ctx.params or {}
         name = params.get("name")
         args = _summarize(params.get("arguments") or {})
+        user = _user_name()
         start = time.perf_counter()
-        logger.info("tool_call start name=%s args=%r", name, args)
+        logger.info("tool_call start user=%s name=%s args=%r", user, name, args)
 
         try:
             result = await call_next(ctx)
         except Exception as exc:  # noqa: BLE001 — фіксуємо та передаємо далі
             duration_ms = (time.perf_counter() - start) * 1000
-            logger.error("tool_call error name=%s duration_ms=%.1f exc=%r", name, duration_ms, str(exc))
+            logger.error("tool_call error user=%s name=%s duration_ms=%.1f exc=%r", user, name, duration_ms, str(exc))
             raise
 
         duration_ms = (time.perf_counter() - start) * 1000
         if _is_error(result):
             logger.warning(
-                "tool_call done name=%s duration_ms=%.1f is_error=True error=%r",
+                "tool_call done user=%s name=%s duration_ms=%.1f is_error=True error=%r",
+                user,
                 name,
                 duration_ms,
                 _error_text(result),
             )
         else:
-            logger.info("tool_call done name=%s duration_ms=%.1f is_error=False", name, duration_ms)
+            logger.info("tool_call done user=%s name=%s duration_ms=%.1f is_error=False", user, name, duration_ms)
         return result
 
     return audit_middleware

@@ -30,7 +30,7 @@ def update_file(
         regex: Вважати `find` регулярним виразом, коли True.
         check_syntax: Валідувати синтаксис для .py/.js/.php перед збереженням (типово True).
     """
-    target = resolve_path(path)
+    target = resolve_path(path, access="write")
     if not target.is_file():
         raise FileNotFoundError(f"not a file: {target}")
 

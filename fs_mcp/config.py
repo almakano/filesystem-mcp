@@ -5,13 +5,13 @@ from pathlib import Path
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8222
 DEFAULT_MAX_READ_BYTES = 5 * 1024 * 1024  # 5 MiB
-DEFAULT_MAX_SEARCH_RESULTS = 500
+DEFAULT_MAX_SEARCH_RESULTS = 100
 DEFAULT_EXEC_TIMEOUT = 60.0
-DEFAULT_EXEC_TIMEOUT_MAX = 600.0
+DEFAULT_EXEC_TIMEOUT_MAX = 7200.0
 
 HOST: str = DEFAULT_HOST
 PORT: int = DEFAULT_PORT
-MOUNT_PATH: str = "/llm/mcp"
+MOUNT_PATH: str = "/llm/mcp/{user}"
 ALLOWED_HOSTS: list[str] = []
 
 SANDBOX: Path | None = None
@@ -62,8 +62,8 @@ def configure(
         EXEC_TIMEOUT_MAX = exec_timeout_max
 
 
-def resolve_path(path: str) -> Path:
-    """Розв'язує шлях, заданий користувачем, і перевіряє межі пісочниці."""
+def resolve_path(path: str, *, access: str = "read") -> Path:
+    """Розв'язує шлях і перевіряє sandbox та права вибраного MCP-користувача."""
     if not path:
         raise ValueError("path must not be empty")
     candidate = Path(path).expanduser()
@@ -76,4 +76,14 @@ def resolve_path(path: str) -> Path:
             resolved.relative_to(SANDBOX)
         except ValueError:
             raise PermissionError(f"path escapes sandbox root {SANDBOX}: {path}")
+    from .auth import require_access
+
+    if access == "read":
+        require_access(resolved, read=True)
+    elif access == "write":
+        require_access(resolved, write=True)
+    elif access == "traverse":
+        require_access(resolved, execute=True)
+    elif access != "none":
+        raise ValueError(f"unknown access mode: {access}")
     return resolved
