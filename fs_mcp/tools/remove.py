@@ -4,6 +4,7 @@ import os
 import shutil
 
 from ..app import server
+from ..auth import require_access
 from ..config import resolve_path
 
 
@@ -17,7 +18,8 @@ def delete_path(path: str, recursive: bool = False) -> dict:
             видаляється, лише якщо він порожній (або `recursive` True); це захищає
             від випадкової втрати даних.
     """
-    target = resolve_path(path)
+    target = resolve_path(path, access="none")
+    require_access(target.parent, write=True)
     if not target.exists() and not target.is_symlink():
         raise FileNotFoundError(f"path does not exist: {target}")
 

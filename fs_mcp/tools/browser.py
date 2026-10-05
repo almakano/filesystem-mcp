@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 from ..app import server
+from ..auth import preexec_as_user
 from ..config import EXEC_TIMEOUT_MAX, MAX_READ_BYTES
 
 # Типовий реальний ліміт усього запуску браузера (сек).
@@ -181,6 +182,7 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
             text=True,
             env=env,
             start_new_session=True,  # нова група процесів — вбиваємо все дерево за таймаутом
+            preexec_fn=preexec_as_user,
         )
         try:
             out, err = proc.communicate(timeout=timeout + 10)

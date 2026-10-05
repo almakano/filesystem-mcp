@@ -78,7 +78,7 @@ def write_file(
         create_dirs: Створювати батьківські каталоги, якщо вони відсутні.
         check_syntax: Валідувати синтаксис для .py/.js/.php перед записом (типово True).
     """
-    target = resolve_path(path)
+    target = resolve_path(path, access="write")
 
     # Формуємо підсумковий вміст (з урахуванням дозапису) і перевіряємо синтаксис.
     resulting = content

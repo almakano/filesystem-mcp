@@ -25,7 +25,7 @@ MCP-сервер на Python (офіційний SDK `mcp` 2.x), який дає
 ```bash
 pip install -r requirements.txt
 python3 server.py
-# [filesystem-mcp] bind = http://0.0.0.0:8222/llm/mcp
+# [filesystem-mcp] bind = http://0.0.0.0:8222/llm/mcp/{user}
 ```
 
 Перевірка (локальний MCP-клієнт зі SDK):
@@ -43,7 +43,7 @@ python3 client_test.py
 |---|---|---|
 | `--host` | `0.0.0.0` | Адреса прослуховування |
 | `--port` | `8222` | Порт |
-| `--path` | `/llm/mcp` | Шлях ендпоінта Streamable HTTP |
+| `--path` | `/llm/mcp/{user}` | Шлях ендпоінта Streamable HTTP |
 | `--root` | *(порожньо)* | Якщо задано — «пісочниця», усі шляхи обмежені цією папкою |
 | `--allowed-hosts` | *(порожньо)* | Список допустимих `Host` через кому; вмикає DNS-rebinding protection. Порожньо або `*` — protection вимкнено |
 | `--max-read-bytes` | `5242880` | Ліміт на розмір читаного/писаного файлу |
@@ -53,7 +53,7 @@ python3 client_test.py
 Приклади:
 
 ```bash
-python3 server.py --host 127.0.0.1 --port 8222 --path /llm/mcp
+python3 server.py --host 127.0.0.1 --port 8222 --path /llm/mcp/{user}
 python3 server.py --root /srv/agent                 # обмежити все пісочницею
 python3 server.py --allowed-hosts a.example.com,b.example.com
 ```
@@ -116,7 +116,7 @@ screen -dmS mcp bash -lc "cd /opt/mcpserver && exec /usr/local/.pyenv/versions/3
 Блок `location` для nginx (всередину чинного `server { ... listen 443 ssl http2; }`):
 
 ```nginx
-location ^~ /llm/mcp {
+location ~ "^/llm/mcp/(?<mcp_user>[A-Za-z_][A-Za-z0-9_.-]{0,31})/?$" {
     proxy_pass http://127.0.0.1:8222;
     proxy_http_version 1.1;
     proxy_set_header Host $host;

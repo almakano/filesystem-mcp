@@ -64,7 +64,9 @@ def main(argv: list[str] | None = None) -> None:
 
     # Аудит викликів інструментів (ім'я, аргументи, тривалість, підсумок) у stderr -> server.log.
     from fs_mcp.audit import get_audit_logger, make_tool_audit_middleware
+    from fs_mcp.auth import user_context_middleware
 
+    server.middleware.append(user_context_middleware)
     server.middleware.append(make_tool_audit_middleware(get_audit_logger()))
 
     if config.ALLOWED_HOSTS and config.ALLOWED_HOSTS != ["*"]:
