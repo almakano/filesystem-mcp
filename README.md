@@ -13,7 +13,7 @@ MCP-сервер на Python (офіційний SDK `mcp` 2.x), який дає
 | `list_directory` | Перегляд вмісту каталогу |
 | `delete_path` | Видалення файлу або каталогу (каталог — лише порожній або з `recursive=True`) |
 | `rename_path` | Перейменування/переміщення файлу або каталогу (захист від перезапису без `overwrite=True`) |
-| `test_in_browser` | Виконання Puppeteer-сценарію у headless Chrome (Node.js) із доступним `page` і повертання результату |
+| `test_in_browser` | Виконання Python Playwright-сценарію у headless Chromium із доступним `page` і повертання результату |
 
 > ⚠️ Типово сервер надає доступ **до всієї файлової системи** і може
 > виконувати довільні команди. Це потужно й небезпечно. Для підключення до
@@ -27,6 +27,24 @@ pip install -r requirements.txt
 python3 server.py
 # [filesystem-mcp] bind = http://0.0.0.0:8222/llm/mcp/{user}
 ```
+
+> Для інструмента `test_in_browser` потрібен браузер Chromium. Стандартно:
+> `python3 -m playwright install chromium` (за потреби `--with-deps`).
+>
+> ⚠️ **Debian 11 (bullseye):** Playwright із версії **1.62** не підтримує Debian 11
+> (помилка `Playwright does not support chromium on debian11-x64`). Тому в
+> `requirements.txt` закріплено `playwright<1.62`.
+>
+> Якщо CDN Playwright (`cdn.playwright.dev`) недоступний і вбудований Chromium
+> неможливо завантажити, гарнес `test_in_browser` автоматично використовує
+> **системний** Chromium/Chrome. На Debian 11 достатньо:
+> ```bash
+> apt-get install -y chromium        # /usr/bin/chromium
+> ```
+> Явний вибір движія (за потреби) — через змінні середовища сервера, які
+> пробрасуються у процес браузера:
+> `MCP_PLAYWRIGHT_EXECUTABLE=/шлях/до/chromium` (або
+> `MCP_PLAYWRIGHT_CHANNEL=chrome`, `MCP_PLAYWRIGHT_BROWSER=chromium|firefox|webkit`).
 
 Перевірка (локальний MCP-клієнт зі SDK):
 
@@ -203,7 +221,7 @@ Streamable HTTP.
 | `execute.py` | виконання команд |
 | `remove.py` | видалення файлів і каталогів |
 | `rename.py` | перейменування/переміщення файлів і каталогів |
-| `browser.py` | запуск Puppeteer-сценарію у headless Chrome через Node.js (`test_in_browser`) |
+| `browser.py` | запуск Python Playwright-сценарію у headless Chromium (`test_in_browser`) |
 
 ## Інші файли
 - `client_test.py` — тестовий MCP-клієнт (проганяє всі інструменти).

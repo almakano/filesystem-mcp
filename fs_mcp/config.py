@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-DEFAULT_HOST = "0.0.0.0"
+DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8222
 DEFAULT_MAX_READ_BYTES = 5 * 1024 * 1024  # 5 MiB
 DEFAULT_MAX_SEARCH_RESULTS = 100

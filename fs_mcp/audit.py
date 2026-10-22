@@ -77,7 +77,7 @@ def _error_text(result: Any) -> Any:
         return None
     first = content[0]
     text = first.get("text") if isinstance(first, dict) else getattr(first, "text", None)
-    return _compact(text) if text is not None else None
+    return text if text is not None else None
 
 
 def make_tool_audit_middleware(logger: logging.Logger) -> Callable[..., Awaitable[HandlerResult]]:
@@ -101,7 +101,7 @@ def make_tool_audit_middleware(logger: logging.Logger) -> Callable[..., Awaitabl
             result = await call_next(ctx)
         except Exception as exc:  # noqa: BLE001 — фіксуємо та передаємо далі
             duration_ms = (time.perf_counter() - start) * 1000
-            logger.error("tool_call error user=%s name=%s duration_ms=%.1f exc=%r", user, name, duration_ms, str(exc))
+            logger.error("tool_call error user=%s name=%s duration_ms=%.1f exc=%s", user, name, duration_ms, exc)
             raise
 
         duration_ms = (time.perf_counter() - start) * 1000
