@@ -13,7 +13,7 @@ MCP-сервер на Python (офіційний SDK `mcp` 2.x), який дає
 | `list_directory` | Перегляд вмісту каталогу |
 | `delete_path` | Видалення файлу або каталогу (каталог — лише порожній або з `recursive=True`) |
 | `rename_path` | Перейменування/переміщення файлу або каталогу (захист від перезапису без `overwrite=True`) |
-| `test_in_browser` | Виконання Python Playwright-сценарію у headless Chromium із доступним `page` і повертання результату |
+| `test_in_browser` | Виконання Python Playwright-сценарію у headless Chromium із доступним `page`, підтримкою User-Agent та заголовка `Authorization` |
 
 > ⚠️ Типово сервер надає доступ **до всієї файлової системи** і може
 > виконувати довільні команди. Це потужно й небезпечно. Для підключення до
@@ -45,6 +45,8 @@ python3 server.py
 > пробрасуються у процес браузера:
 > `MCP_PLAYWRIGHT_EXECUTABLE=/шлях/до/chromium` (або
 > `MCP_PLAYWRIGHT_CHANNEL=chrome`, `MCP_PLAYWRIGHT_BROWSER=chromium|firefox|webkit`).
+
+Для авторизованих сторінок передайте інструменту необов’язковий аргумент `authorization`, наприклад `Bearer <token>`. Значення додається до HTTP-заголовка `Authorization` для запитів сторінки.
 
 Перевірка (локальний MCP-клієнт зі SDK):
 

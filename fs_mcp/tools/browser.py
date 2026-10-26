@@ -65,6 +65,7 @@ def run():
     url = os.environ.get("__MCP_URL") or ""
     nav_timeout = int(os.environ.get("__MCP_NAV_TIMEOUT") or "30000")
     user_agent = os.environ.get("__MCP_UA") or ""
+    authorization = os.environ.get("__MCP_AUTHORIZATION") or ""
     with open(script_path, "r", encoding="utf-8") as fh:
         user_script = fh.read()
 
@@ -121,6 +122,8 @@ def run():
             else:
                 context = browser.new_context()
             page = context.new_page()
+            if authorization:
+                page.set_extra_http_headers({"Authorization": authorization})
             page.set_default_timeout(nav_timeout)
             if url:
                 page.goto(url, wait_until="domcontentloaded", timeout=nav_timeout)
@@ -178,7 +181,7 @@ def _split_result(stdout: str) -> tuple[dict | None, str]:
 
 
 @server.tool()
-def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER_TIMEOUT, cwd: str = ".", user_agent: str = "") -> dict:
+def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER_TIMEOUT, cwd: str = ".", user_agent: str = "", authorization: str = "") -> dict:
     """Виконує Python Playwright-сценарій у headless Chromium і повертає результат.
 
     `script` — тіло функції, якій доступні `page` (об'єкт Playwright Page),
@@ -199,6 +202,7 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
             скриншотів/файлів) розв'язуються від нього (типово — домашній каталог
             MCP-користувача).
         user_agent: Необов'язковий рядок User-Agent; порожньо — типовий Chrome UA.
+        authorization: Необов'язане значення HTTP-заголовка Authorization (наприклад, `Bearer <token>`).
 
     Returns:
         dict з `ok` (bool); при успіху — `result` (повернуте сценарієм значення) і
@@ -238,6 +242,7 @@ def test_in_browser(script: str, url: str = "", timeout: float = DEFAULT_BROWSER
         env["__MCP_SCRIPT"] = str(script_path)
         env["__MCP_URL"] = url or ""
         env["__MCP_UA"] = (user_agent or env.get("MCP_PLAYWRIGHT_USER_AGENT") or DEFAULT_USER_AGENT).strip()
+        env["__MCP_AUTHORIZATION"] = authorization or ""
         env["__MCP_NAV_TIMEOUT"] = str(nav_ms)
         env["__MCP_MARKER"] = _RESULT_MARKER
 
