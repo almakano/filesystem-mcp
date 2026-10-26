@@ -94,36 +94,51 @@ def _groups(user: pwd.struct_passwd) -> set[int]:
     return set(os.getgrouplist(user.pw_name, user.pw_gid))
 
 
-def _has_mode(path, required: int, user: pwd.struct_passwd) -> bool:
-    st = path.stat()
+def _permitted_bits(st: os.stat_result, user: pwd.struct_passwd) -> int:
+    """Біти прав, які реально діють для користувача (owner/group/other)."""
     if st.st_uid == user.pw_uid:
-        actual = (st.st_mode >> 6) & 0o7
-    elif st.st_gid in _groups(user):
-        actual = (st.st_mode >> 3) & 0o7
-    else:
-        actual = st.st_mode & 0o7
-    return (actual & required) == required
+        return (st.st_mode >> 6) & 0o7
+    if st.st_gid in _groups(user):
+        return (st.st_mode >> 3) & 0o7
+    return st.st_mode & 0o7
+
+
+def _allowed(st: os.stat_result, user: pwd.struct_passwd, required: int) -> bool:
+    """Чи дозволена дія з бітами ``required`` для об'єкта зі станом ``st``.
+
+    Для root враховуємо CAP_DAC_OVERRIDE: читання й запис не обмежуються бітами,
+    а виконання/обхід каталогу потребує хоч одного виставленого біта ``x``.
+    """
+    if user.pw_uid == 0:
+        if not (required & 0o1):
+            return True
+        return bool(st.st_mode & 0o111)
+    return (_permitted_bits(st, user) & required) == required
+
+
+def _has_mode(path, required: int, user: pwd.struct_passwd) -> bool:
+    return _allowed(path.stat(), user, required)
 
 
 def require_access(path, *, read: bool = False, write: bool = False, execute: bool = False) -> None:
     user = get_user()
     target = path.resolve(strict=False)
 
-    current = target if target.exists() else target.parent
-    missing = []
-    while not current.exists() and current != current.parent:
-        missing.append(current)
-        current = current.parent
+    # Обхід (біт x) перевіряємо лише для каталогів: сам цільовий файл не мусить
+    # мати біт виконання, щоб його можна було прочитати чи записати.
+    anchor = target if target.is_dir() else target.parent
+    while not anchor.exists() and anchor != anchor.parent:
+        anchor = anchor.parent
 
-    for parent in [current, *current.parents]:
+    for parent in [anchor, *anchor.parents]:
         if parent == parent.parent:
             break
-        if not _has_mode(parent, 0o001, user) and parent.stat().st_uid != user.pw_uid and parent.stat().st_gid not in _groups(user):
+        if not _allowed(parent.stat(), user, 0o1):
             raise PermissionError(f"user {user.pw_name} cannot traverse {parent}")
 
     if not target.exists():
-        if write and not _has_mode(target.parent, 0o003, user):
-            raise PermissionError(f"user {user.pw_name} cannot write {target.parent}")
+        if write and not _allowed(anchor.stat(), user, 0o3):
+            raise PermissionError(f"user {user.pw_name} cannot write {anchor}")
         return
 
     if read:
