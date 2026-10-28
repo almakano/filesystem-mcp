@@ -16,7 +16,7 @@ from ..config import (
 
 
 @server.tool()
-def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_DEFAULT, shell: bool = False) -> dict:
+def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_DEFAULT, shell: bool = True) -> dict:
     """Виконує команду оболонки та захоплює її вивід.
 
     Args:
@@ -25,7 +25,7 @@ def execute_command(command: str, cwd: str = ".", timeout: float = EXEC_TIMEOUT_
         cwd: Робочий каталог для процесу. Відносні шляхи та пусте значення
             (``""``/``None``) розв'язуються від домашнього каталогу MCP-користувача.
         timeout: Максимум секунд реального часу, після яких процес буде завершено примусово.
-        shell: Виконати через /bin/sh -c (або cmd /c) замість exec-форми.
+        shell: Виконати через /bin/sh -c (або cmd /c); за замовчуванням True.
     """
     # cwd ""/None → «.» → домашній каталог користувача (див. config.resolve_path).
     workdir = resolve_path(cwd or ".", access="traverse")

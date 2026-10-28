@@ -4,6 +4,7 @@ import ast
 import shutil
 import subprocess
 import tempfile
+import warnings
 from pathlib import Path
 
 CHECKABLE_SUFFIXES = {".py", ".js", ".mjs", ".cjs", ".php"}
@@ -35,7 +36,10 @@ def check_syntax(path: str | Path, content: str) -> tuple[bool, str | None]:
 
 def _check_python(content: str) -> tuple[bool, str | None]:
     try:
-        ast.parse(content)
+        # Legacy escape sequences in user code may emit SyntaxWarning during parsing.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SyntaxWarning)
+            ast.parse(content)
         return True, None
     except SyntaxError as exc:
         loc = ""
