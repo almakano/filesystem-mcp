@@ -20,7 +20,9 @@ LOGFILE="/var/log/mcpserver.log"
 
 MCP_HOST="${MCP_HOST:-127.0.0.1}"
 MCP_PORT="${MCP_PORT:-8222}"
-MCP_PATH="${MCP_PATH:-/llm/mcp/{user}}"
+if [[ -z "${MCP_PATH:-}" ]]; then
+    MCP_PATH='/llm/mcp/{user}'
+fi
 MCP_ROOT="${MCP_ROOT:-}"
 MCP_ALLOWED_HOSTS="${MCP_ALLOWED_HOSTS:-}"
 
