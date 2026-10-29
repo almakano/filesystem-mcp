@@ -20,12 +20,32 @@ MCP-сервер на Python (офіційний SDK `mcp` 2.x), який дає
 > ChatGPT обов'язково обмежте доступ (`--root`) та/або поставте сервер за
 > автентифікований reverse proxy / tunnel.
 
-## Швидкий старт
+## Встановлення як системної служби (Debian/Ubuntu)
+
+Інсталятор завантажує репозиторій GitHub у `/opt/mcpserver`, встановлює системний Chromium і Python-залежності у віртуальне середовище, створює SysV-службу та вмикає її автозапуск:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/almakano/filesystem-mcp/main/install.sh | sudo bash -s --
+service mcpserver start
+service mcpserver status
+```
+
+Керування: `service mcpserver start|stop|restart|status`. Лог: `/var/log/mcpserver.log`. Налаштування: `/etc/default/mcpserver` (після змін — `service mcpserver restart`). Типово сервер слухає лише `127.0.0.1:8222`. Для іншого каталогу встановлення можна задати `INSTALL_DIR=/шлях` перед запуском інсталятора.
+
+Видалення (завантажує актуальний скрипт з GitHub):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/almakano/filesystem-mcp/main/uninstall.sh | sudo bash -s --
+```
+
+За замовчуванням видаляються служба, конфігурація та каталог програми. Щоб зберегти `/etc/default/mcpserver`, додайте `--keep-config`. Лог `/var/log/mcpserver.log` і системні пакети Python/Chromium залишаються.
+
+## Швидкий старт вручну
 
 ```bash
 pip install -r requirements.txt
 python3 server.py
-# [filesystem-mcp] bind = http://0.0.0.0:8222/llm/mcp/{user}
+# [filesystem-mcp] bind = http://127.0.0.1:8222/llm/mcp/{user}
 ```
 
 > Для інструмента `test_in_browser` потрібен браузер Chromium. Стандартно:
@@ -165,7 +185,7 @@ location ~ "^/llm/mcp/(?<mcp_user>[A-Za-z_][A-Za-z0-9_.-]{0,31})/?$" {
 
 (зведення перенесено з докстрингів і коментарів модулів `*.py`)
 
-### Точка входу — `server.py`
+### точка входу — `server.py`
 
 Розбирає аргументи командного рядка, застосовує конфігурацію та запускає
 Streamable HTTP.

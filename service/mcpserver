@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+### BEGIN INIT INFO
+# Provides:          mcpserver
+# Required-Start:    $remote_fs $network
+# Required-Stop:     $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Filesystem MCP Server
+### END INIT INFO
+
+set -u
+
+DEFAULT_FILE="/etc/default/mcpserver"
+[[ -r "$DEFAULT_FILE" ]] && . "$DEFAULT_FILE"
+
+APP_DIR="${MCP_INSTALL_DIR:-/opt/mcpserver}"
+PYTHON="$APP_DIR/.venv/bin/python"
+PIDFILE="/run/mcpserver.pid"
+LOGFILE="/var/log/mcpserver.log"
+
+MCP_HOST="${MCP_HOST:-127.0.0.1}"
+MCP_PORT="${MCP_PORT:-8222}"
+MCP_PATH="${MCP_PATH:-/llm/mcp/{user}}"
+MCP_ROOT="${MCP_ROOT:-}"
+MCP_ALLOWED_HOSTS="${MCP_ALLOWED_HOSTS:-}"
+
+if [[ -n "${MCP_PLAYWRIGHT_EXECUTABLE:-}" ]]; then
+    export MCP_PLAYWRIGHT_EXECUTABLE
+fi
+
+ARGS=(--host "$MCP_HOST" --port "$MCP_PORT" --path "$MCP_PATH")
+[[ -n "$MCP_ROOT" ]] && ARGS+=(--root "$MCP_ROOT")
+[[ -n "$MCP_ALLOWED_HOSTS" ]] && ARGS+=(--allowed-hosts "$MCP_ALLOWED_HOSTS")
+
+case "${1:-}" in
+    start)
+        if [[ ! -x "$PYTHON" ]]; then
+            echo "MCP virtualenv not found: $PYTHON" >&2
+            exit 1
+        fi
+        if start-stop-daemon --start --quiet --background --make-pidfile \
+            --pidfile "$PIDFILE" --chdir "$APP_DIR" --startas "$PYTHON" \
+            --output "$LOGFILE" -- "$APP_DIR/server.py" "${ARGS[@]}"; then
+            echo "mcpserver started"
+        else
+            echo "mcpserver is already running or could not be started"
+            exit 1
+        fi
+        ;;
+    stop)
+        if start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile "$PIDFILE"; then
+            rm -f "$PIDFILE"
+            echo "mcpserver stopped"
+        else
+            echo "mcpserver is not running"
+            rm -f "$PIDFILE"
+        fi
+        ;;
+    restart|force-reload)
+        "$0" stop
+        "$0" start
+        ;;
+    status)
+        if [[ -s "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+            echo "mcpserver is running (pid $(cat "$PIDFILE"))"
+        else
+            echo "mcpserver is not running"
+            exit 3
+        fi
+        ;;
+    *)
+        echo "Usage: service mcpserver {start|stop|restart|status}"
+        exit 2
+        ;;
+esac

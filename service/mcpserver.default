@@ -1,0 +1,11 @@
+# MCP server configuration.
+# Apply changes with: service mcpserver restart
+
+MCP_INSTALL_DIR="/opt/mcpserver"
+MCP_HOST="127.0.0.1"
+MCP_PORT="8222"
+MCP_PATH="/llm/mcp/{user}"
+MCP_ROOT=""
+MCP_ALLOWED_HOSTS=""
+# Empty means use Playwright's bundled browser and automatic system fallback.
+MCP_PLAYWRIGHT_EXECUTABLE=""
