@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import sys
 import time
@@ -70,6 +71,20 @@ def _is_error(result: Any) -> bool:
     return bool(value)
 
 
+def _response_summary(result: Any) -> tuple[int, str]:
+    """Повертає розмір і перші 100 символів фактичного вмісту відповіді."""
+    structured = result.get("structuredContent", result.get("structured_content")) if isinstance(result, dict) else getattr(result, "structured_content", None)
+    if structured is not None:
+        response = json.dumps(structured, ensure_ascii=False, default=str, separators=(",", ":"))
+    else:
+        content = result.get("content") if isinstance(result, dict) else getattr(result, "content", None)
+        response = "".join(
+            block.get("text", "") if isinstance(block, dict) else getattr(block, "text", "")
+            for block in (content or [])
+        )
+    return len(response.encode("utf-8")), response[:100]
+
+
 def _error_text(result: Any) -> Any:
     """Дістає текст першого content-блоку результату (для запису про невдачу)."""
     content = result.get("content") if isinstance(result, dict) else getattr(result, "content", None)
@@ -105,16 +120,17 @@ def make_tool_audit_middleware(logger: logging.Logger) -> Callable[..., Awaitabl
             raise
 
         duration_ms = (time.perf_counter() - start) * 1000
+        response_bytes, response_preview = _response_summary(result)
         if _is_error(result):
             logger.warning(
-                "tool_call done user=%s name=%s duration_ms=%.1f is_error=True error=%r",
-                user,
-                name,
-                duration_ms,
-                _error_text(result),
+                "tool_call done user=%s name=%s duration_ms=%.1f is_error=True response_bytes=%d response_preview=%r error=%r",
+                user, name, duration_ms, response_bytes, response_preview, _error_text(result),
             )
         else:
-            logger.info("tool_call done user=%s name=%s duration_ms=%.1f is_error=False", user, name, duration_ms)
+            logger.info(
+                "tool_call done user=%s name=%s duration_ms=%.1f is_error=False response_bytes=%d response_preview=%r",
+                user, name, duration_ms, response_bytes, response_preview,
+            )
         return result
 
     return audit_middleware

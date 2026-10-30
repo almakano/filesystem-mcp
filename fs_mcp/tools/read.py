@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from ..app import server
 from ..config import MAX_READ_BYTES, resolve_path
 
 
 @server.tool()
-def read_file(path: str, start_line: int = 1, end_line: int | None = None, cwd: str = ".") -> dict:
+def read_file(path: str, start_line: int = 1, end_line: int | None = None, cwd: str = ".") -> dict[str, Any]:
     """Читає текстовий файл, за бажанням — конкретний діапазон рядків (відлік з 1).
 
     Args:
