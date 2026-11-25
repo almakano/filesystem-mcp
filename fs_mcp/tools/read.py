@@ -18,8 +18,18 @@ def read_file(path: str, start_line: int = 1, end_line: int | None = None, cwd: 
             домашній каталог MCP-користувача).
     """
     target = resolve_path(path, cwd=cwd)
+    if not target.exists():
+        return {
+            "error": "file_not_found",
+            "message": f"Файл не знайдено: {target}",
+            "path": str(target),
+        }
     if not target.is_file():
-        raise FileNotFoundError(f"not a file: {target}")
+        return {
+            "error": "not_a_file",
+            "message": f"Це не файл: {target}",
+            "path": str(target),
+        }
 
     size = target.stat().st_size
     if size > MAX_READ_BYTES:
